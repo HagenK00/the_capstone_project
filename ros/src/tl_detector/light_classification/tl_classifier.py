@@ -3,24 +3,24 @@ from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 import cv2
-
+import os 
 import keras
 
-
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
-
+        os.chdir(cwd)
         # load model for classification of traffic light color
-        self.classifier = keras.models.load_model('model.h5')
+        self.classifier = keras.models.load_model('model_.h5')
         self.cls_graph = tf.get_default_graph()
 
         # load SSD MobileNet petrained on COCO
         self.detect_graph = tf.Graph()        
         path_frozen_model = 'frozen_inference_graph.pb'
 
-        with self.detect_graph.as_defaul():
+        with self.detect_graph.as_default():
             od_graph_def = tf.GraphDef()
             with tf.gfile.GFile(path_frozen_model, 'rb') as fid:
                 serialized_graph = fid.read()
@@ -98,13 +98,13 @@ class TLClassifier(object):
                 pred = self.classifier.predict(tl_resized_image)
                 pred = np.argmax(pred)
 
-                if pred is 0:
+                if pred == 0:
                     return TrafficLight.RED
 
-                else if pred is 1:
+                elif pred == 1:
                     return TrafficLight.YELLOW
 
-                else if pred is 2:
+                elif pred == 2:
                     return TrafficLight.GREEN
 
         return TrafficLight.UNKNOWN
