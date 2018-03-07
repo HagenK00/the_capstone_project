@@ -155,7 +155,7 @@ class TLDetector(object):
         """
         light = None
         light_wp = -1 
-        min_dist = 500
+        min_dist = 200
         prev_stop_line_wp = -1
 
         stop_line_wps = []
@@ -164,7 +164,6 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose.position.x,self.pose.pose.position.y)
-
             for i in stop_line_positions:
                 x_stop = i[0]
                 y_stop = i[1]
@@ -180,8 +179,8 @@ class TLDetector(object):
                     x_stop_wp = self.waypoints.waypoints[i].pose.pose.position.x
                     y_stop_wp = self.waypoints.waypoints[i].pose.pose.position.y
                     dist = self.get_dist(x_car,y_car,x_stop_wp,y_stop_wp)
-                    
                     if dist <= min_dist:
+			min_dist = dist
                         light = i
                         light_wp = i
                         i = stop_line_positions[-1]
