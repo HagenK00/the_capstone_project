@@ -110,7 +110,6 @@ class TLDetector(object):
         ind = None
 
         if self.waypoints:
-
             min_dist = 500
 
             for i, wp in enumerate(self.waypoints.waypoints):
@@ -155,7 +154,7 @@ class TLDetector(object):
         """
         light = None
         light_wp = -1 
-        min_dist = 200
+        min_dist = 150
         prev_stop_line_wp = -1
 
         stop_line_wps = []
@@ -188,15 +187,12 @@ class TLDetector(object):
                 else:
                     prev_stop_line_wp = i
 
-
         #TODO find the closest visible traffic light (if one exists)
         
-
-
         if light and self.light_classifier:
             state = self.get_light_state(light)
             return light_wp, state
-        self.waypoints = None
+        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
