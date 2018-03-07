@@ -39,7 +39,8 @@ class TLClassifier(object):
         self.img_width = 0
 
     def detect_traffic_lights(self, image):
-
+	
+	image = np.expand_dims(image, 0)
         with tf.Session(graph=self.detect_graph) as sess:
             (boxes, scores, classes) = sess.run([self.detect_boxes, self.detect_scores,\
                                                  self.detect_classes], feed_dict={self.image_tensor: image})
@@ -53,8 +54,8 @@ class TLClassifier(object):
     def get_best_detected_traffic_light(self, boxes, scores, classes):
         inds = ((classes == 10) & (scores >= 0.15)).nonzero()
         box = [0,0,0,0]
-        
-        if len(inds) > 0:
+
+        if len(inds[0])>0:
             top_score_ind = np.argmax(scores[inds])
         
             box[0] = int(boxes[top_score_ind,0]*self.img_height)
@@ -66,7 +67,7 @@ class TLClassifier(object):
         return box
 
     def crop_image(self, image, box):
-        return image[0,box[0]:box[2],box[1]:box[3]]
+        return image[box[0]:box[2],box[1]:box[3]]
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -80,24 +81,23 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
 
-        self.img_height = image.shape[1]
-        self.img_width = image.shape[2]
-
+        self.img_height = image.shape[0]
+        self.img_width = image.shape[1]
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         boxes, scores, classes = self.detect_traffic_lights(image)
         box = self.get_best_detected_traffic_light(boxes, scores, classes)
-
         if np.any(box):
             
             tl_image = self.crop_image(image, box)
-
-            tl_resized_image = cv2.resize(tl_image,(64,64))
+	    #save_img = cv2.cvtColor(tl_image, cv2.COLOR_RGB2BGR)
+            #cv2.imwrite('_cropped.jpg',save_img)
+            tl_resized_image = cv2.resize(tl_image,(32,32))
 
             tl_resized_image = np.expand_dims(tl_resized_image, axis=0)
 
-            with self.cls_graph.as_defaul():
+            with self.cls_graph.as_default():
                 pred = self.classifier.predict(tl_resized_image)
                 pred = np.argmax(pred)
-
                 if pred == 0:
                     return TrafficLight.RED
 

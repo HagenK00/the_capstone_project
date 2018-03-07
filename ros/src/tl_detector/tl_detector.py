@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -41,6 +42,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
+	self.light_classifier = None
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
@@ -111,9 +113,9 @@ class TLDetector(object):
 
             min_dist = 500
 
-            for i in range(len(self.waypoints)):
-                x_way = self.waypoints[i].pose.pose.position.x
-                y_way = self.waypoints[i].pose.pose.position.y_way
+            for i, wp in enumerate(self.waypoints.waypoints):
+                x_way = wp.pose.pose.position.x
+                y_way = wp.pose.pose.position.y
 
                 dist = self.get_dist(x_pos, y_pos, x_way, y_way)
 
@@ -161,23 +163,22 @@ class TLDetector(object):
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose.position.x,\
-                                                     self.pose.pose.position.y)
-
-            for i in range(len(stop_line_positions)):
-                x_stop = self.stop_line_positions[i][0]
-                y_stop = self.stop_line_positions[i][1]
-
-                stop_line_wp = self.get_closest_waypoint(x_stop,y_stop)
-                stop_line_positions.append(stop_line_wp)
+            car_position = self.get_closest_waypoint(self.pose.pose.position.x,self.pose.pose.position.y)
 
             for i in stop_line_positions:
-                if i > car_position and car_position >= prev_stop_line_wp:
-                    x_car = self.waypoints[car_position].pose.pose.position.x
-                    y_car = self.waypoints[car_position].pose.pose.position.y
+                x_stop = i[0]
+                y_stop = i[1]
 
-                    x_stop_wp = self.waypoints[i].pose.pose.position.x
-                    y_stop_wp = self.waypoints[i].pose.pose.position.y
+                stop_line_wp = self.get_closest_waypoint(x_stop,y_stop)
+                stop_line_wps.append(stop_line_wp)
+
+            for i in stop_line_wps:
+                if i > car_position and car_position >= prev_stop_line_wp:
+                    x_car = self.waypoints.waypoints[car_position].pose.pose.position.x
+                    y_car = self.waypoints.waypoints[car_position].pose.pose.position.y
+
+                    x_stop_wp = self.waypoints.waypoints[i].pose.pose.position.x
+                    y_stop_wp = self.waypoints.waypoints[i].pose.pose.position.y
                     dist = self.get_dist(x_car,y_car,x_stop_wp,y_stop_wp)
                     
                     if dist <= min_dist:
@@ -193,7 +194,7 @@ class TLDetector(object):
         
 
 
-        if light:
+        if light and self.light_classifier:
             state = self.get_light_state(light)
             return light_wp, state
         self.waypoints = None
